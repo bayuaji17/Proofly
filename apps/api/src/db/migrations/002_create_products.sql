@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS products (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  admin_id UUID NOT NULL REFERENCES admin(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  category VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  photo_url TEXT NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
