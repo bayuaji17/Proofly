@@ -5,6 +5,7 @@ import { openAPIRouteHandler } from 'hono-openapi'
 import { Scalar } from '@scalar/hono-api-reference'
 import { errorHandler } from './middleware/error-handler.js'
 import authRoutes from './routes/auth.js'
+import productRoutes from './routes/products.js'
 
 const app = new Hono()
 
@@ -16,6 +17,7 @@ app.use('*', cors())
 app.onError(errorHandler)
 
 app.route('/api/auth', authRoutes)
+app.route('/api/products', productRoutes)
 
 // Basic healthcheck route
 app.get('/', (c) => {
