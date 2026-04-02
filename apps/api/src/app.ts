@@ -6,6 +6,7 @@ import { Scalar } from '@scalar/hono-api-reference'
 import { errorHandler } from './middleware/error-handler.js'
 import authRoutes from './routes/auth.js'
 import productRoutes from './routes/products.js'
+import batchRoutes from './routes/batches.js'
 
 const app = new Hono()
 
@@ -18,6 +19,7 @@ app.onError(errorHandler)
 
 app.route('/api/auth', authRoutes)
 app.route('/api/products', productRoutes)
+app.route('/api', batchRoutes)
 
 // Basic healthcheck route
 app.get('/', (c) => {

@@ -30,3 +30,21 @@ export interface ProductWithCounts extends Product {
   batch_count: number
   qr_code_count: number
 }
+
+export interface Batch {
+  id: string
+  product_id: string
+  batch_number: string
+  quantity: number
+  production_date: string
+  expiry_date: string
+  is_locked: boolean
+  created_at: Date
+  updated_at: Date
+}
+
+export interface BatchWithCounts extends Batch {
+  qr_code_count: number
+  total_scans: number
+  product_name?: string
+}
