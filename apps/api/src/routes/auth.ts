@@ -5,7 +5,9 @@ import {
   loginSchema, 
   loginResponseSchema, 
   refreshResponseSchema, 
-  meResponseSchema 
+  meResponseSchema,
+  logoutResponseSchema,
+  refreshTokenCookieSchema
 } from '../validators/auth.schema.js'
 import * as authService from '../services/auth.service.js'
 import { authMiddleware } from '../middleware/auth.js'
@@ -67,6 +69,7 @@ app.post(
       401: { description: 'Unauthorized (refresh token missing or invalid)' }
     }
   }),
+  zValidator('cookie', refreshTokenCookieSchema),
   async (c) => {
     const oldRefreshToken = getCookie(c, REFRESH_TOKEN_COOKIE_NAME)
     if (!oldRefreshToken) {
@@ -98,9 +101,15 @@ app.post(
   describeRoute({
     description: 'Logout admin and invalidate refresh token',
     responses: {
-      204: { description: 'Successfully logged out' }
+      200: {
+        description: 'Successfully logged out',
+        content: {
+          'application/json': { schema: resolver(logoutResponseSchema) }
+        }
+      }
     }
   }),
+  zValidator('cookie', refreshTokenCookieSchema),
   async (c) => {
     const refreshToken = getCookie(c, REFRESH_TOKEN_COOKIE_NAME)
     if (refreshToken) {
@@ -111,7 +120,10 @@ app.post(
       path: '/api/auth'
     })
 
-    return c.body(null, 204)
+    return c.json({
+      success: true,
+      message: 'Logout Success'
+    }, 200)
   }
 )
 
