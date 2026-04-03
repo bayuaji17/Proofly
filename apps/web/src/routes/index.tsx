@@ -1,87 +1,111 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { Header } from '#/components/layout/header'
+import { Footer } from '#/components/layout/footer'
+import { ScanLine, Keyboard } from 'lucide-react'
 
-export const Route = createFileRoute('/')({ component: App })
+export const Route = createFileRoute('/')({
+  head: () => ({
+    meta: [{ title: 'Proofly — Real-time detection and response' }],
+  }),
+  component: LandingPage,
+})
 
-function App() {
+function LandingPage() {
   return (
-    <main className="page-wrap px-4 pb-8 pt-14">
-      <section className="island-shell rise-in relative overflow-hidden rounded-[2rem] px-6 py-10 sm:px-10 sm:py-14">
-        <div className="pointer-events-none absolute -left-20 -top-24 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(79,184,178,0.32),transparent_66%)]" />
-        <div className="pointer-events-none absolute -bottom-20 -right-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(47,106,74,0.18),transparent_66%)]" />
-        <p className="island-kicker mb-3">TanStack Start Base Template</p>
-        <h1 className="display-title mb-5 max-w-3xl text-4xl leading-[1.02] font-bold tracking-tight text-[var(--sea-ink)] sm:text-6xl">
-          Start simple, ship quickly.
-        </h1>
-        <p className="mb-8 max-w-2xl text-base text-[var(--sea-ink-soft)] sm:text-lg">
-          This base starter intentionally keeps things light: two routes, clean
-          structure, and the essentials you need to build from scratch.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <a
-            href="/about"
-            className="rounded-full border border-[rgba(50,143,151,0.3)] bg-[rgba(79,184,178,0.14)] px-5 py-2.5 text-sm font-semibold text-[var(--lagoon-deep)] no-underline transition hover:-translate-y-0.5 hover:bg-[rgba(79,184,178,0.24)]"
-          >
-            About This Starter
-          </a>
-          <a
-            href="https://tanstack.com/router"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full border border-[rgba(23,58,64,0.2)] bg-white/50 px-5 py-2.5 text-sm font-semibold text-[var(--sea-ink)] no-underline transition hover:-translate-y-0.5 hover:border-[rgba(23,58,64,0.35)]"
-          >
-            Router Guide
-          </a>
-        </div>
-      </section>
+    <div className="bg-white min-h-screen text-neutral-900 font-sans selection:bg-primary/20">
+      <Header />
 
-      <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          [
-            'Type-Safe Routing',
-            'Routes and links stay in sync across every page.',
-          ],
-          [
-            'Server Functions',
-            'Call server code from your UI without creating API boilerplate.',
-          ],
-          [
-            'Streaming by Default',
-            'Ship progressively rendered responses for faster experiences.',
-          ],
-          [
-            'Tailwind Native',
-            'Design quickly with utility-first styling and reusable tokens.',
-          ],
-        ].map(([title, desc], index) => (
-          <article
-            key={title}
-            className="island-shell feature-card rise-in rounded-2xl p-5"
-            style={{ animationDelay: `${index * 90 + 80}ms` }}
-          >
-            <h2 className="mb-2 text-base font-semibold text-[var(--sea-ink)]">
-              {title}
-            </h2>
-            <p className="m-0 text-sm text-[var(--sea-ink-soft)]">{desc}</p>
-          </article>
-        ))}
-      </section>
+      <main>
+        {/* Stark Hero Section */}
+        <section className="relative px-6 pt-32 lg:px-8 max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-16 pb-24">
+          
+          {/* Left Text Content */}
+          <div className="mx-auto max-w-2xl lg:mx-0 lg:max-w-xl lg:pt-8 flex-1">
+            <h1 className="font-display text-5xl font-semibold tracking-tight text-neutral-900 sm:text-7xl leading-[1.1]">
+              Real-time verification and incident response
+            </h1>
+            <p className="mt-8 text-lg font-medium text-neutral-500 sm:text-xl/8">
+              Automate operations from insight to action with Proofly powering fraud detection, anti-counterfeit, and moderation teams.
+            </p>
+            <div className="mt-10 flex items-center gap-x-6">
+              <Link
+                to="/verify"
+                className="rounded-full bg-primary px-6 py-3.5 text-sm/6 font-semibold text-primary-content shadow-sm hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all"
+              >
+                Mulai Verifikasi
+              </Link>
+            </div>
+          </div>
 
-      <section className="island-shell mt-8 rounded-2xl p-6">
-        <p className="island-kicker mb-2">Quick Start</p>
-        <ul className="m-0 list-disc space-y-2 pl-5 text-sm text-[var(--sea-ink-soft)]">
-          <li>
-            Edit <code>src/routes/index.tsx</code> to customize the home page.
-          </li>
-          <li>
-            Update <code>src/components/Header.tsx</code> and{' '}
-            <code>src/components/Footer.tsx</code> for brand links.
-          </li>
-          <li>
-            Add routes in <code>src/routes</code> and tweak visual tokens in{' '}
-            <code>src/styles.css</code>.
-          </li>
-        </ul>
-      </section>
-    </main>
+          {/* Right Mockup/Graphic */}
+          <div className="flex-1 w-full max-w-2xl lg:max-w-none">
+            <div className="rounded-2xl bg-neutral-50 p-4 ring-1 ring-neutral-200/50 shadow-sm relative overflow-hidden">
+              <img 
+                src="/b2b-dashboard.png" 
+                alt="Proofly Dashboard Mockup" 
+                className="w-full rounded-lg shadow-sm border border-neutral-200/80 object-cover"
+              />
+            </div>
+          </div>
+
+        </section>
+
+        {/* Gray Background Bottom Section */}
+        <section className="bg-slate-50 py-24 sm:py-32 border-t border-slate-200/50">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="mx-auto max-w-2xl lg:text-center mb-16">
+              <h2 className="text-base/7 font-semibold text-primary">Operasi Berkelanjutan</h2>
+              <p className="mt-2 font-display text-4xl font-semibold tracking-tight text-neutral-900 sm:text-5xl">
+                Verifikasi terpusat tanpa hambatan
+              </p>
+              <p className="mt-6 text-lg/8 text-neutral-600">
+                Lakukan pengujian dan pemantauan dari berbagai cara, terintegrasi langsung dengan satu klik menuju sistem analisis.
+              </p>
+            </div>
+
+            <div className="mx-auto grid max-w-2xl grid-cols-1 gap-6 sm:grid-cols-2 lg:max-w-4xl">
+              {/* Card 1 */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-shadow hover:shadow-md">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="rounded-xl bg-primary/10 p-3 ring-1 ring-primary/20">
+                    <ScanLine className="size-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-lg font-semibold text-neutral-900">Scan QR Code</h3>
+                  </div>
+                  <div className="ml-auto rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                    Active
+                  </div>
+                </div>
+                <p className="text-sm text-neutral-500">
+                  Integrasi modul pemindai presisi cerdas memanfaatkan kamera perangkat langsung via peramban web B2B.
+                </p>
+              </div>
+
+              {/* Card 2 */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-shadow hover:shadow-md">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="rounded-xl bg-primary/10 p-3 ring-1 ring-primary/20">
+                    <Keyboard className="size-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-lg font-semibold text-neutral-900">Input Serial Number</h3>
+                  </div>
+                   <div className="ml-auto rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                    Active
+                  </div>
+                </div>
+                <p className="text-sm text-neutral-500">
+                  Sinkronisasi validasi baris karakter (*Serial Number*) secara asinkron menembus filter *rate-limited* infrastruktur.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+      <Footer />
+    </div>
   )
 }
