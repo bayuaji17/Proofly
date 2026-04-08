@@ -7,6 +7,7 @@ import { errorHandler } from './middleware/error-handler.js'
 import authRoutes from './routes/auth.js'
 import productRoutes from './routes/products.js'
 import batchRoutes from './routes/batches.js'
+import uploadRoutes from './routes/upload.js'
 
 const app = new Hono()
 
@@ -25,6 +26,7 @@ app.onError(errorHandler)
 app.route('/api/auth', authRoutes)
 app.route('/api/products', productRoutes)
 app.route('/api', batchRoutes)
+app.route('/api/upload', uploadRoutes)
 
 // Basic healthcheck route
 app.get('/', (c) => {

@@ -5,13 +5,13 @@ export async function create(adminId: string, data: {
   name: string
   category: string
   description: string
-  photo_url: string
+  photo_url?: string
 }): Promise<Product> {
   const result = await pool.query<Product>(
     `INSERT INTO products (admin_id, name, category, description, photo_url)
      VALUES ($1, $2, $3, $4, $5)
      RETURNING *`,
-    [adminId, data.name, data.category, data.description, data.photo_url]
+    [adminId, data.name, data.category, data.description, data.photo_url ?? null]
   )
   return result.rows[0]
 }

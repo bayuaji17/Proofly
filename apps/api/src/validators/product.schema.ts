@@ -7,7 +7,7 @@ export const createProductSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters').max(255, 'Name must not exceed 255 characters'),
   category: z.string().min(1, 'Category is required').max(255),
   description: z.string().min(10, 'Description must be at least 10 characters'),
-  photo_url: z.url('Photo URL must be a valid URL')
+  photo_url: z.string().url('Photo URL must be a valid URL').optional()
 }).openapi({
   ref: 'CreateProductInput',
   description: 'Input payload for creating a new product'

@@ -1,5 +1,6 @@
 import { HTTPException } from 'hono/http-exception'
 import * as productQueries from '../db/queries/products.js'
+import * as storageService from './storage.service.js'
 import type { CreateProductInput } from '../validators/product.schema.js'
 
 export async function createProduct(adminId: string, data: CreateProductInput) {
@@ -50,6 +51,19 @@ export async function deleteProduct(id: string) {
     throw new HTTPException(409, {
       message: 'Cannot delete product with locked batches. Archive it instead.'
     })
+  }
+
+  // Cleanup photo from R2
+  if (existing.photo_url) {
+    const key = storageService.extractKeyFromUrl(existing.photo_url)
+    if (key) {
+      try {
+        await storageService.deleteObject(key)
+      } catch {
+        // Log but don't fail — product deletion is more important
+        console.error(`Failed to delete R2 object: ${key}`)
+      }
+    }
   }
 
   await productQueries.remove(id)

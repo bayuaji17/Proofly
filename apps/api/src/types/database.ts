@@ -20,7 +20,7 @@ export interface Product {
   name: string
   category: string
   description: string
-  photo_url: string
+  photo_url: string | null
   is_active: boolean
   created_at: Date
   updated_at: Date
