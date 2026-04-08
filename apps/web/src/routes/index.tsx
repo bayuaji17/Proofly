@@ -18,10 +18,10 @@ function LandingPage() {
       <main>
         {/* Stark Hero Section */}
         <section className="relative px-6 pt-32 lg:px-8 max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-16 pb-24">
-          
+
           {/* Left Text Content */}
           <div className="mx-auto max-w-2xl lg:mx-0 lg:max-w-xl lg:pt-8 flex-1">
-            <h1 className="font-display text-5xl font-semibold tracking-tight text-neutral-900 sm:text-7xl leading-[1.1]">
+            <h1 className="font-heading text-5xl font-semibold tracking-tight text-neutral-900 sm:text-7xl leading-[1.1]">
               Real-time verification and incident response
             </h1>
             <p className="mt-8 text-lg font-medium text-neutral-500 sm:text-xl/8">
@@ -40,9 +40,9 @@ function LandingPage() {
           {/* Right Mockup/Graphic */}
           <div className="flex-1 w-full max-w-2xl lg:max-w-none">
             <div className="rounded-2xl bg-neutral-50 p-4 ring-1 ring-neutral-200/50 shadow-sm relative overflow-hidden">
-              <img 
-                src="/b2b-dashboard.png" 
-                alt="Proofly Dashboard Mockup" 
+              <img
+                src="/b2b-dashboard.png"
+                alt="Proofly Dashboard Mockup"
                 className="w-full rounded-lg shadow-sm border border-neutral-200/80 object-cover"
               />
             </div>
@@ -55,7 +55,7 @@ function LandingPage() {
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="mx-auto max-w-2xl lg:text-center mb-16">
               <h2 className="text-base/7 font-semibold text-primary">Operasi Berkelanjutan</h2>
-              <p className="mt-2 font-display text-4xl font-semibold tracking-tight text-neutral-900 sm:text-5xl">
+              <p className="mt-2 font-heading text-4xl font-semibold tracking-tight text-neutral-900 sm:text-5xl">
                 Verifikasi terpusat tanpa hambatan
               </p>
               <p className="mt-6 text-lg/8 text-neutral-600">
@@ -71,7 +71,7 @@ function LandingPage() {
                     <ScanLine className="size-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-display text-lg font-semibold text-neutral-900">Scan QR Code</h3>
+                    <h3 className="font-heading text-lg font-semibold text-neutral-900">Scan QR Code</h3>
                   </div>
                   <div className="ml-auto rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
                     Active
@@ -89,9 +89,9 @@ function LandingPage() {
                     <Keyboard className="size-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-display text-lg font-semibold text-neutral-900">Input Serial Number</h3>
+                    <h3 className="font-heading text-lg font-semibold text-neutral-900">Input Serial Number</h3>
                   </div>
-                   <div className="ml-auto rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                  <div className="ml-auto rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
                     Active
                   </div>
                 </div>

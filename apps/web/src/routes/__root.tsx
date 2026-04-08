@@ -43,7 +43,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="font-sans antialiased [overflow-wrap:anywhere]">
+      <body className="font-sans antialiased wrap-anywhere">
         <ToastProvider>
           {children}
         </ToastProvider>

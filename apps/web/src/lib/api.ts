@@ -1,5 +1,6 @@
 import { API_BASE_URL } from './constants'
 import { authStore } from './auth-store'
+import { toast } from '#/components/ui/toast'
 
 /* ------------------------------------------------------------------ */
 /*  ApiError                                                          */
@@ -73,6 +74,7 @@ class ApiClient {
 
       // Refresh also failed — redirect to login
       authStore.clear()
+      toast.info('Sesi berakhir, silakan login kembali')
       window.location.href = '/login'
       throw new ApiError(401, 'Unauthorized', 'Session expired')
     }

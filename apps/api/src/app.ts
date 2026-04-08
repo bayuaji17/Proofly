@@ -12,7 +12,12 @@ const app = new Hono()
 
 // Global middlewares
 app.use('*', logger())
-app.use('*', cors())
+app.use('*', cors({
+  origin: process.env.FRONTEND_BASEURL || 'http://localhost:3000',
+  credentials: true,
+  allowHeaders: ['Content-Type', 'Authorization'],
+  allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+}))
 
 // Register global error handler
 app.onError(errorHandler)

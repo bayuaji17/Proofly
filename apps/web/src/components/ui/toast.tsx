@@ -95,7 +95,7 @@ function ToastContainer() {
   const { toasts, removeToast } = useToastContext()
 
   return (
-    <div className="toast toast-end toast-bottom z-50">
+    <div className="toast toast-center toast-top z-50">
       {toasts.map((t) => (
         <ToastItem key={t.id} toast={t} onDismiss={removeToast} />
       ))}
