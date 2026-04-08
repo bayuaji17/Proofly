@@ -36,7 +36,7 @@ export function Sidebar() {
 
       <aside className="flex min-h-full w-64 flex-col bg-base-200">
         {/* Brand */}
-        <div className="flex h-16 items-center gap-2 px-6">
+        <div className="flex h-16 items-center gap-2 px-6 border-b border-base-200 shadow-sm">
           <span className="text-xl font-bold font-display">Proofly</span>
         </div>
 

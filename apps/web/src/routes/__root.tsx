@@ -6,7 +6,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { ToastProvider } from '#/components/ui/toast'
-
+import { formDevtoolsPlugin } from '@tanstack/react-form-devtools'
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
 import appCss from '../styles.css?url'
@@ -44,9 +44,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-sans antialiased wrap-anywhere">
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <ToastProvider>{children}</ToastProvider>
         <TanStackDevtools
           config={{ position: 'bottom-right' }}
           plugins={[
@@ -55,6 +53,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               render: <TanStackRouterDevtoolsPanel />,
             },
             TanStackQueryDevtools,
+            formDevtoolsPlugin(),
           ]}
         />
         <Scripts />

@@ -5,7 +5,7 @@ export function AdminNavbar() {
   const { admin, logout } = useAuth()
 
   return (
-    <nav className="navbar border-b border-base-200 bg-base-100">
+    <nav className="navbar border-b border-base-200 bg-base-100 shadow-sm">
       {/* Mobile drawer toggle */}
       <div className="flex-none lg:hidden">
         <label
