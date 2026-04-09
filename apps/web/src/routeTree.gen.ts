@@ -17,7 +17,9 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminProductsIndexRouteImport } from './routes/admin/products/index'
 import { Route as AdminProductsNewRouteImport } from './routes/admin/products/new'
 import { Route as AdminProductsProductIdRouteImport } from './routes/admin/products/$productId'
-import { Route as AdminProductsProductIdEditRouteImport } from './routes/admin/products/$productId.edit'
+import { Route as AdminBatchesBatchIdRouteImport } from './routes/admin/batches/$batchId'
+import { Route as AdminProductsProductIdEditRouteImport } from './routes/admin/products/$productId_.edit'
+import { Route as AdminBatchesBatchIdEditRouteImport } from './routes/admin/batches/$batchId_.edit'
 
 const VerifyRoute = VerifyRouteImport.update({
   id: '/verify',
@@ -59,12 +61,22 @@ const AdminProductsProductIdRoute = AdminProductsProductIdRouteImport.update({
   path: '/products/$productId',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminBatchesBatchIdRoute = AdminBatchesBatchIdRouteImport.update({
+  id: '/batches/$batchId',
+  path: '/batches/$batchId',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminProductsProductIdEditRoute =
   AdminProductsProductIdEditRouteImport.update({
-    id: '/edit',
-    path: '/edit',
-    getParentRoute: () => AdminProductsProductIdRoute,
+    id: '/products/$productId_/edit',
+    path: '/products/$productId/edit',
+    getParentRoute: () => AdminRouteRoute,
   } as any)
+const AdminBatchesBatchIdEditRoute = AdminBatchesBatchIdEditRouteImport.update({
+  id: '/batches/$batchId_/edit',
+  path: '/batches/$batchId/edit',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -72,9 +84,11 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/verify': typeof VerifyRoute
   '/admin/': typeof AdminIndexRoute
-  '/admin/products/$productId': typeof AdminProductsProductIdRouteWithChildren
+  '/admin/batches/$batchId': typeof AdminBatchesBatchIdRoute
+  '/admin/products/$productId': typeof AdminProductsProductIdRoute
   '/admin/products/new': typeof AdminProductsNewRoute
   '/admin/products/': typeof AdminProductsIndexRoute
+  '/admin/batches/$batchId/edit': typeof AdminBatchesBatchIdEditRoute
   '/admin/products/$productId/edit': typeof AdminProductsProductIdEditRoute
 }
 export interface FileRoutesByTo {
@@ -82,9 +96,11 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/verify': typeof VerifyRoute
   '/admin': typeof AdminIndexRoute
-  '/admin/products/$productId': typeof AdminProductsProductIdRouteWithChildren
+  '/admin/batches/$batchId': typeof AdminBatchesBatchIdRoute
+  '/admin/products/$productId': typeof AdminProductsProductIdRoute
   '/admin/products/new': typeof AdminProductsNewRoute
   '/admin/products': typeof AdminProductsIndexRoute
+  '/admin/batches/$batchId/edit': typeof AdminBatchesBatchIdEditRoute
   '/admin/products/$productId/edit': typeof AdminProductsProductIdEditRoute
 }
 export interface FileRoutesById {
@@ -94,10 +110,12 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/verify': typeof VerifyRoute
   '/admin/': typeof AdminIndexRoute
-  '/admin/products/$productId': typeof AdminProductsProductIdRouteWithChildren
+  '/admin/batches/$batchId': typeof AdminBatchesBatchIdRoute
+  '/admin/products/$productId': typeof AdminProductsProductIdRoute
   '/admin/products/new': typeof AdminProductsNewRoute
   '/admin/products/': typeof AdminProductsIndexRoute
-  '/admin/products/$productId/edit': typeof AdminProductsProductIdEditRoute
+  '/admin/batches/$batchId_/edit': typeof AdminBatchesBatchIdEditRoute
+  '/admin/products/$productId_/edit': typeof AdminProductsProductIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -107,9 +125,11 @@ export interface FileRouteTypes {
     | '/login'
     | '/verify'
     | '/admin/'
+    | '/admin/batches/$batchId'
     | '/admin/products/$productId'
     | '/admin/products/new'
     | '/admin/products/'
+    | '/admin/batches/$batchId/edit'
     | '/admin/products/$productId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -117,9 +137,11 @@ export interface FileRouteTypes {
     | '/login'
     | '/verify'
     | '/admin'
+    | '/admin/batches/$batchId'
     | '/admin/products/$productId'
     | '/admin/products/new'
     | '/admin/products'
+    | '/admin/batches/$batchId/edit'
     | '/admin/products/$productId/edit'
   id:
     | '__root__'
@@ -128,10 +150,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/verify'
     | '/admin/'
+    | '/admin/batches/$batchId'
     | '/admin/products/$productId'
     | '/admin/products/new'
     | '/admin/products/'
-    | '/admin/products/$productId/edit'
+    | '/admin/batches/$batchId_/edit'
+    | '/admin/products/$productId_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -199,42 +223,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProductsProductIdRouteImport
       parentRoute: typeof AdminRouteRoute
     }
-    '/admin/products/$productId/edit': {
-      id: '/admin/products/$productId/edit'
-      path: '/edit'
+    '/admin/batches/$batchId': {
+      id: '/admin/batches/$batchId'
+      path: '/batches/$batchId'
+      fullPath: '/admin/batches/$batchId'
+      preLoaderRoute: typeof AdminBatchesBatchIdRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/products/$productId_/edit': {
+      id: '/admin/products/$productId_/edit'
+      path: '/products/$productId/edit'
       fullPath: '/admin/products/$productId/edit'
       preLoaderRoute: typeof AdminProductsProductIdEditRouteImport
-      parentRoute: typeof AdminProductsProductIdRoute
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/batches/$batchId_/edit': {
+      id: '/admin/batches/$batchId_/edit'
+      path: '/batches/$batchId/edit'
+      fullPath: '/admin/batches/$batchId/edit'
+      preLoaderRoute: typeof AdminBatchesBatchIdEditRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
   }
 }
 
-interface AdminProductsProductIdRouteChildren {
-  AdminProductsProductIdEditRoute: typeof AdminProductsProductIdEditRoute
-}
-
-const AdminProductsProductIdRouteChildren: AdminProductsProductIdRouteChildren =
-  {
-    AdminProductsProductIdEditRoute: AdminProductsProductIdEditRoute,
-  }
-
-const AdminProductsProductIdRouteWithChildren =
-  AdminProductsProductIdRoute._addFileChildren(
-    AdminProductsProductIdRouteChildren,
-  )
-
 interface AdminRouteRouteChildren {
   AdminIndexRoute: typeof AdminIndexRoute
-  AdminProductsProductIdRoute: typeof AdminProductsProductIdRouteWithChildren
+  AdminBatchesBatchIdRoute: typeof AdminBatchesBatchIdRoute
+  AdminProductsProductIdRoute: typeof AdminProductsProductIdRoute
   AdminProductsNewRoute: typeof AdminProductsNewRoute
   AdminProductsIndexRoute: typeof AdminProductsIndexRoute
+  AdminBatchesBatchIdEditRoute: typeof AdminBatchesBatchIdEditRoute
+  AdminProductsProductIdEditRoute: typeof AdminProductsProductIdEditRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminIndexRoute: AdminIndexRoute,
-  AdminProductsProductIdRoute: AdminProductsProductIdRouteWithChildren,
+  AdminBatchesBatchIdRoute: AdminBatchesBatchIdRoute,
+  AdminProductsProductIdRoute: AdminProductsProductIdRoute,
   AdminProductsNewRoute: AdminProductsNewRoute,
   AdminProductsIndexRoute: AdminProductsIndexRoute,
+  AdminBatchesBatchIdEditRoute: AdminBatchesBatchIdEditRoute,
+  AdminProductsProductIdEditRoute: AdminProductsProductIdEditRoute,
 }
 
 const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(

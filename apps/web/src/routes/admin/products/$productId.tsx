@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useSuspenseQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useSuspenseQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import {
   Edit,
@@ -21,11 +21,19 @@ import { Dialog } from '#/components/ui/dialog'
 import { Button } from '#/components/ui/button'
 import { toast } from '#/components/ui/toast'
 import { ApiError } from '#/lib/api'
+import { BatchForm } from '#/components/forms/batch-form'
+import type { BatchFormValues } from '#/components/forms/batch-form'
+import type { Batch } from '#/types/models'
 import {
   productQueryOptions,
   deleteProductMutation,
   archiveProductMutation,
 } from '#/lib/queries/products'
+import {
+  batchesQueryOptions,
+  createBatchMutation,
+  deleteBatchMutation,
+} from '#/lib/queries/batches'
 
 /* ------------------------------------------------------------------ */
 /*  Route                                                              */
@@ -33,9 +41,14 @@ import {
 
 export const Route = createFileRoute('/admin/products/$productId')({
   loader: async ({ context, params }) => {
-    await context.queryClient.ensureQueryData(
-      productQueryOptions(params.productId),
-    )
+    await Promise.all([
+      context.queryClient.ensureQueryData(
+        productQueryOptions(params.productId),
+      ),
+      context.queryClient.ensureQueryData(
+        batchesQueryOptions(params.productId),
+      ),
+    ])
   },
 
   head: () => ({
@@ -57,7 +70,14 @@ function ProductDetailPage() {
   const { data } = useSuspenseQuery(productQueryOptions(productId))
   const product = data.data
 
+  const batchesQuery = useQuery(batchesQueryOptions(productId))
+  const batches = batchesQuery.data?.data ?? []
+
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [createBatchOpen, setCreateBatchOpen] = useState(false)
+  const [isCreatingBatch, setIsCreatingBatch] = useState(false)
+  const [deleteBatchId, setDeleteBatchId] = useState<string | null>(null)
+  const [deleteBatchNumber, setDeleteBatchNumber] = useState('')
 
   // ── Archive mutation ──
   const archiveMut = useMutation({
@@ -209,11 +229,14 @@ function ProductDetailPage() {
         </div>
       </div>
 
-      {/* Batch List (Placeholder — Sprint 3) */}
+      {/* Batch List */}
       <div className="mt-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold font-heading">Daftar Batch</h2>
-          <button className="btn btn-primary btn-sm gap-1" disabled>
+          <button
+            className="btn btn-primary btn-sm gap-1"
+            onClick={() => setCreateBatchOpen(true)}
+          >
             <Plus className="size-4" />
             Tambah Batch
           </button>
@@ -229,26 +252,99 @@ function ProductDetailPage() {
                 <th className="px-5 py-4">Tgl. Kadaluarsa</th>
                 <th className="px-5 py-4 text-center">Status</th>
                 <th className="px-5 py-4 text-center">Total Scan</th>
+                <th className="px-5 py-4"></th>
               </tr>
             </thead>
-            <tbody className="font-sans">
-              <tr>
-                <td colSpan={6} className="px-5 py-12 text-center">
-                  <div className="flex flex-col items-center gap-2">
-                    <Layers className="size-10 text-base-content/20" />
-                    <p className="text-sm text-base-content/50">
-                      Belum ada batch untuk produk ini.
-                    </p>
-                    <p className="text-xs text-base-content/40">
-                      Fitur batch management akan tersedia di Sprint 3.
-                    </p>
-                  </div>
-                </td>
-              </tr>
+            <tbody className="font-sans divide-y divide-base-200/50">
+              {batches.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-5 py-12 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <Layers className="size-10 text-base-content/20" />
+                      <p className="text-sm text-base-content/50">
+                        Belum ada batch untuk produk ini.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                batches.map((batch) => (
+                  <BatchRow
+                    key={batch.id}
+                    batch={batch}
+                    onDelete={(id, number) => {
+                      setDeleteBatchId(id)
+                      setDeleteBatchNumber(number)
+                    }}
+                  />
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Create Batch Modal */}
+      <dialog
+        className="modal"
+        open={createBatchOpen}
+        onClick={(e) => { if (e.target === e.currentTarget) setCreateBatchOpen(false) }}
+      >
+        <div className="modal-box">
+          <h3 className="text-lg font-bold font-heading mb-4">Tambah Batch Baru</h3>
+          <BatchForm
+            onSubmit={async (values: BatchFormValues) => {
+              setIsCreatingBatch(true)
+              try {
+                await createBatchMutation(productId, values)
+                await queryClient.invalidateQueries({ queryKey: ['batches', productId] })
+                await queryClient.invalidateQueries({ queryKey: ['products'] })
+                toast.success('Batch berhasil ditambahkan')
+                setCreateBatchOpen(false)
+              } catch (err) {
+                if (err instanceof ApiError && err.status === 409) {
+                  toast.error('Batch number sudah digunakan untuk produk ini')
+                } else {
+                  toast.error(err instanceof ApiError ? err.message : 'Gagal menambahkan batch')
+                }
+              } finally {
+                setIsCreatingBatch(false)
+              }
+            }}
+            isSubmitting={isCreatingBatch}
+          />
+          <div className="modal-action mt-2">
+            <button className="btn btn-ghost btn-sm" onClick={() => setCreateBatchOpen(false)}>Batal</button>
+          </div>
+        </div>
+      </dialog>
+
+      {/* Delete Batch Dialog */}
+      <Dialog
+        open={deleteBatchId !== null}
+        onClose={() => setDeleteBatchId(null)}
+        onConfirm={async () => {
+          if (!deleteBatchId) return
+          try {
+            await deleteBatchMutation(deleteBatchId)
+            await queryClient.invalidateQueries({ queryKey: ['batches', productId] })
+            await queryClient.invalidateQueries({ queryKey: ['products'] })
+            toast.success('Batch berhasil dihapus')
+          } catch (err) {
+            if (err instanceof ApiError && err.status === 409) {
+              toast.error('Batch sudah terkunci dan tidak dapat dihapus')
+            } else {
+              toast.error(err instanceof ApiError ? err.message : 'Gagal menghapus batch')
+            }
+          } finally {
+            setDeleteBatchId(null)
+          }
+        }}
+        title="Hapus Batch"
+        description={`Apakah Anda yakin ingin menghapus batch "${deleteBatchNumber}"? Tindakan ini tidak dapat dibatalkan.`}
+        confirmText="Hapus"
+        variant="danger"
+      />
 
       {/* Delete Dialog */}
       <Dialog
@@ -290,5 +386,77 @@ function StatCard({
         </div>
       </div>
     </div>
+  )
+}
+
+function BatchRow({
+  batch,
+  onDelete,
+}: {
+  batch: Batch
+  onDelete: (id: string, batchNumber: string) => void
+}) {
+  const formatDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+
+  return (
+    <tr className="group border-b-0 transition-colors duration-200 hover:bg-primary/5">
+      <td className="px-5 py-3">
+        <Link
+          to="/admin/batches/$batchId"
+          params={{ batchId: batch.id }}
+          className="text-sm font-semibold text-base-content transition-colors group-hover:text-primary"
+        >
+          {batch.batch_number}
+        </Link>
+      </td>
+      <td className="px-5 py-3 text-center">
+        <span className="text-sm font-medium text-base-content/80">
+          {batch.quantity.toLocaleString('id-ID')}
+        </span>
+      </td>
+      <td className="px-5 py-3">
+        <span className="text-sm text-base-content/70">
+          {formatDate(batch.production_date)}
+        </span>
+      </td>
+      <td className="px-5 py-3">
+        <span className="text-sm text-base-content/70">
+          {formatDate(batch.expiry_date)}
+        </span>
+      </td>
+      <td className="px-5 py-3 text-center">
+        {batch.is_locked ? (
+          <div className="inline-flex items-center gap-1 rounded-full bg-warning/15 px-2.5 py-1 text-xs font-medium text-warning">
+            <Lock className="size-3" />
+            Locked
+          </div>
+        ) : (
+          <div className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2.5 py-1 text-xs font-medium text-success">
+            <Unlock className="size-3" />
+            Unlocked
+          </div>
+        )}
+      </td>
+      <td className="px-5 py-3 text-center">
+        <span className="text-sm font-medium text-base-content/80">
+          {batch.total_scans ?? 0}
+        </span>
+      </td>
+      <td className="px-5 py-3">
+        <button
+          className="btn btn-ghost btn-xs text-error"
+          disabled={batch.is_locked}
+          title={batch.is_locked ? 'Batch terkunci, tidak dapat dihapus' : 'Hapus batch'}
+          onClick={() => onDelete(batch.id, batch.batch_number)}
+        >
+          <Trash2 className="size-3.5" />
+        </button>
+      </td>
+    </tr>
   )
 }

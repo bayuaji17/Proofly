@@ -16,7 +16,7 @@ import { ApiError } from '#/lib/api'
 /*  Route                                                              */
 /* ------------------------------------------------------------------ */
 
-export const Route = createFileRoute('/admin/products/$productId/edit')({
+export const Route = createFileRoute('/admin/products/$productId_/edit')({
   loader: async ({ context, params }) => {
     await context.queryClient.ensureQueryData(
       productQueryOptions(params.productId),
