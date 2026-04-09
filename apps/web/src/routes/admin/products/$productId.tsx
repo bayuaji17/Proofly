@@ -9,6 +9,9 @@ import {
   Package,
   Layers,
   QrCode,
+  Plus,
+  Lock,
+  Unlock,
 } from 'lucide-react'
 
 import { PageHeader } from '#/components/layout/page-header'
@@ -203,6 +206,47 @@ function ProductDetailPage() {
             label="Total QR Code"
             value={product.qr_code_count ?? 0}
           />
+        </div>
+      </div>
+
+      {/* Batch List (Placeholder — Sprint 3) */}
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold font-heading">Daftar Batch</h2>
+          <button className="btn btn-primary btn-sm gap-1" disabled>
+            <Plus className="size-4" />
+            Tambah Batch
+          </button>
+        </div>
+
+        <div className="overflow-x-auto rounded-xl border border-base-200 bg-base-100 shadow-sm">
+          <table className="table w-full">
+            <thead className="border-b border-base-200 bg-base-200/50 text-xs font-semibold uppercase tracking-wider text-base-content/60 font-heading">
+              <tr>
+                <th className="px-5 py-4">Batch Number</th>
+                <th className="px-5 py-4 text-center">Quantity</th>
+                <th className="px-5 py-4">Tgl. Produksi</th>
+                <th className="px-5 py-4">Tgl. Kadaluarsa</th>
+                <th className="px-5 py-4 text-center">Status</th>
+                <th className="px-5 py-4 text-center">Total Scan</th>
+              </tr>
+            </thead>
+            <tbody className="font-sans">
+              <tr>
+                <td colSpan={6} className="px-5 py-12 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <Layers className="size-10 text-base-content/20" />
+                    <p className="text-sm text-base-content/50">
+                      Belum ada batch untuk produk ini.
+                    </p>
+                    <p className="text-xs text-base-content/40">
+                      Fitur batch management akan tersedia di Sprint 3.
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 

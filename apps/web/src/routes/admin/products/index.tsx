@@ -19,7 +19,7 @@ const productSearchSchema = z.object({
   is_active: z.string().optional(),
   search: z.string().optional(),
   page: z.number().optional().default(1),
-  page_size: z.number().optional().default(20),
+  page_size: z.number().optional().default(10),
 })
 
 /* ------------------------------------------------------------------ */
@@ -84,7 +84,7 @@ function ProductListPage() {
     })
   }
 
-  const totalPages = Math.ceil(data.total / (search.page_size ?? 5))
+  const totalPages = Math.ceil(data.total / search.page_size)
 
   return (
     <>
@@ -142,7 +142,7 @@ function ProductListPage() {
           </label>
           <select
             className="select select-bordered select-sm font-sans"
-            value={search.page_size ?? 20}
+            value={search.page_size}
             onChange={(e) => {
               navigate({
                 to: '.',
@@ -187,9 +187,9 @@ function ProductListPage() {
         </div>
       )}
 
-      {/* Pagination - Selalu di-render tanpa conditional block */}
+
       <Pagination
-        currentPage={search.page ?? 1}
+        currentPage={search.page}
         totalPages={totalPages}
         totalItems={data.total}
         currentCount={data.data.length}
