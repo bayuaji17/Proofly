@@ -1,27 +1,41 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { useSuspenseQuery, useQuery } from '@tanstack/react-query'
 import {
   Edit,
-  Trash2,
   Lock,
   Unlock,
-  Layers,
   QrCode,
   ScanLine,
   Download,
+  Loader2,
 } from 'lucide-react'
 
 import { PageHeader } from '#/components/layout/page-header'
 import { Breadcrumbs } from '#/components/ui/breadcrumbs'
 import { PageSkeleton } from '#/components/ui/skeleton'
+import { toast } from '#/components/ui/toast'
 import { batchQueryOptions } from '#/lib/queries/batches'
+import { qrCodesQueryOptions, downloadPdfBlob } from '#/lib/queries/qrcodes'
+import { GenerateQrDialog } from '#/components/forms/generate-qr-dialog'
 
 /* ------------------------------------------------------------------ */
 /*  Route                                                              */
 /* ------------------------------------------------------------------ */
 
+interface SearchParams {
+  page?: number
+}
+
 export const Route = createFileRoute('/admin/batches/$batchId')({
+  validateSearch: (search: Record<string, unknown>): SearchParams => {
+    return {
+      page: Number(search.page ?? 1) || 1,
+    }
+  },
+  loaderDeps: ({ search: { page } }) => ({ page }),
   loader: async ({ context, params }) => {
+    // Ensure we fetch batch data
     await context.queryClient.ensureQueryData(
       batchQueryOptions(params.batchId),
     )
@@ -41,8 +55,19 @@ export const Route = createFileRoute('/admin/batches/$batchId')({
 
 function BatchDetailPage() {
   const { batchId } = Route.useParams()
-  const { data } = useSuspenseQuery(batchQueryOptions(batchId))
-  const batch = data.data
+  const search = Route.useSearch()
+  const page = search.page ?? 1
+  const navigate = useNavigate({ from: Route.fullPath })
+  
+  // Data Fetching
+  const { data: batchRes, refetch: refetchBatch } = useSuspenseQuery(batchQueryOptions(batchId))
+  const batch = batchRes.data
+
+  const { data: qrcodesRes, isLoading: qrLoading } = useQuery(qrCodesQueryOptions(batchId, page))
+
+  // State
+  const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false)
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
 
   const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('id-ID', {
@@ -50,6 +75,27 @@ function BatchDetailPage() {
       month: 'long',
       year: 'numeric',
     })
+
+  const handleDownloadPdf = async () => {
+    try {
+      setIsDownloadingPdf(true)
+      const blob = await downloadPdfBlob(batchId)
+      const url = URL.createObjectURL(blob)
+      toast.success('Berhasil memuat PDF')
+      // Open in new tab (Preview)
+      window.open(url, '_blank')
+      // Cleanup object URL after a while to avoid memory leaks
+      setTimeout(() => URL.revokeObjectURL(url), 1000 * 60 * 5)
+    } catch (e: any) {
+      toast.error(e.message || 'Gagal mengunduh PDF')
+    } finally {
+      setIsDownloadingPdf(false)
+    }
+  }
+
+  const handlePageChange = (newPage: number) => {
+    navigate({ search: { page: newPage }, replace: true })
+  }
 
   return (
     <>
@@ -66,26 +112,38 @@ function BatchDetailPage() {
       />
 
       <PageHeader title={batch.batch_number}>
-        {!batch.is_locked && (
-          <Link
-            to="/admin/batches/$batchId/edit"
-            params={{ batchId }}
-            className="btn btn-ghost btn-sm gap-1"
+        {!batch.is_locked ? (
+          <>
+            <Link
+              to="/admin/batches/$batchId/edit"
+              params={{ batchId }}
+              className="btn btn-ghost btn-sm gap-1"
+            >
+              <Edit className="size-4" />
+              Edit
+            </Link>
+            <button
+              onClick={() => setIsGenerateDialogOpen(true)}
+              className="btn btn-primary btn-sm gap-1"
+            >
+              <QrCode className="size-4" />
+              Generate QR
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={handleDownloadPdf}
+            disabled={isDownloadingPdf}
+            className="btn btn-primary btn-sm gap-1"
           >
-            <Edit className="size-4" />
-            Edit
-          </Link>
+            {isDownloadingPdf ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Download className="size-4" />
+            )}
+            {isDownloadingPdf ? 'Memuat...' : 'Download PDF'}
+          </button>
         )}
-
-        {/* Placeholder buttons for Sprint 4 */}
-        <button className="btn btn-ghost btn-sm gap-1" disabled>
-          <QrCode className="size-4" />
-          Generate QR
-        </button>
-        <button className="btn btn-ghost btn-sm gap-1" disabled>
-          <Download className="size-4" />
-          Download PDF
-        </button>
       </PageHeader>
 
       {/* Batch Info */}
@@ -151,7 +209,7 @@ function BatchDetailPage() {
         </div>
       </div>
 
-      {/* QR Codes Table (Placeholder — Sprint 4) */}
+      {/* QR Codes Table */}
       <div className="mt-8">
         <h2 className="text-lg font-semibold font-heading mb-4">
           Daftar QR Code
@@ -168,25 +226,105 @@ function BatchDetailPage() {
               </tr>
             </thead>
             <tbody className="font-sans">
-              <tr>
-                <td colSpan={4} className="px-5 py-12 text-center">
-                  <div className="flex flex-col items-center gap-2">
-                    <QrCode className="size-10 text-base-content/20" />
-                    <p className="text-sm text-base-content/50">
-                      {batch.is_locked
-                        ? 'Belum ada QR code yang di-generate.'
-                        : 'Generate QR code untuk melihat daftar serial number.'}
-                    </p>
-                    <p className="text-xs text-base-content/40">
-                      Fitur QR code akan tersedia di Sprint 4.
-                    </p>
-                  </div>
-                </td>
-              </tr>
+              {!batch.is_locked && (qrcodesRes?.total === 0 || !qrcodesRes) ? (
+                <tr>
+                  <td colSpan={4} className="px-5 py-12 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <QrCode className="size-10 text-base-content/20" />
+                      <p className="text-sm text-base-content/50">
+                        Belum ada QR code yang di-generate.
+                      </p>
+                      <button 
+                        onClick={() => setIsGenerateDialogOpen(true)}
+                        className="btn btn-outline btn-sm mt-2"
+                      >
+                        Generate Sekarang
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ) : qrLoading ? (
+                // Loading Skeletons
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-b border-base-200/50 last:border-0 hover:bg-base-200/20 transition-colors">
+                    <td className="px-5 py-4"><div className="h-4 w-32 bg-base-200 rounded animate-pulse" /></td>
+                    <td className="px-5 py-4"><div className="h-6 w-20 bg-base-200 rounded-full mx-auto animate-pulse" /></td>
+                    <td className="px-5 py-4"><div className="h-4 w-12 bg-base-200 rounded mx-auto animate-pulse" /></td>
+                    <td className="px-5 py-4"><div className="h-4 w-24 bg-base-200 rounded animate-pulse" /></td>
+                  </tr>
+                ))
+              ) : qrcodesRes?.data.length ? (
+                qrcodesRes.data.map((qr) => (
+                  <tr key={qr.id} className="border-b border-base-200/50 last:border-0 hover:bg-base-200/20 transition-colors">
+                    <td className="px-5 py-4 font-mono text-sm">{qr.serial_number}</td>
+                    <td className="px-5 py-4 text-center">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        qr.status === 'genuine' ? 'bg-success/15 text-success' : 
+                        qr.status === 'counterfeit' ? 'bg-error/15 text-error' : 
+                        'bg-base-200 text-base-content/70'
+                      }`}>
+                        {qr.status.charAt(0).toUpperCase() + qr.status.slice(1)}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-center text-sm">{qr.scan_count}</td>
+                    <td className="px-5 py-4 text-sm text-base-content/70">
+                      {formatDate(qr.created_at)}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="px-5 py-8 text-center text-sm text-base-content/50">
+                    Tidak ada data QR code.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
+          
+          {/* Pagination */}
+          {qrcodesRes && qrcodesRes.total > qrcodesRes.page_size && (
+             <div className="flex items-center justify-between border-t border-base-200 px-5 py-3">
+               <div className="text-sm text-base-content/60">
+                 Menampilkan <span className="font-medium text-base-content">{(page - 1) * qrcodesRes.page_size + 1}</span> hingga <span className="font-medium text-base-content">{Math.min(page * qrcodesRes.page_size, qrcodesRes.total)}</span> dari <span className="font-medium text-base-content">{qrcodesRes.total}</span> hasil
+               </div>
+               <div className="join">
+                 <button 
+                   className="join-item btn btn-sm"
+                   disabled={page === 1}
+                   onClick={() => handlePageChange(page - 1)}
+                 >
+                   « 
+                 </button>
+                 <button className="join-item btn btn-sm">
+                   Page {page}
+                 </button>
+                 <button 
+                   className="join-item btn btn-sm"
+                   disabled={page * qrcodesRes.page_size >= qrcodesRes.total}
+                   onClick={() => handlePageChange(page + 1)}
+                 >
+                   »
+                 </button>
+               </div>
+             </div>
+          )}
         </div>
       </div>
+
+      <GenerateQrDialog 
+        isOpen={isGenerateDialogOpen}
+        onClose={() => setIsGenerateDialogOpen(false)}
+        batchId={batchId}
+        quantity={batch.quantity}
+        onSuccess={() => {
+          // Refetch everything to show locked state & data list
+          refetchBatch()
+          if (page !== 1) {
+             handlePageChange(1)
+          }
+        }}
+      />
     </>
   )
 }
