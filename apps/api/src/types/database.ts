@@ -48,3 +48,35 @@ export interface BatchWithCounts extends Batch {
   total_scans: number
   product_name?: string
 }
+
+export interface QrCode {
+  id: string
+  batch_id: string
+  serial_number: string
+  status: 'unscanned' | 'genuine' | 'counterfeit'
+  scan_count: number
+  created_at: Date
+}
+
+export interface ScanLog {
+  id: string
+  qr_code_id: string
+  latitude: number | null
+  longitude: number | null
+  city: string | null
+  country: string | null
+  user_agent: string | null
+  ip_address: string | null
+  scanned_at: Date
+}
+
+export interface NotificationRecord {
+  id: string
+  admin_id: string
+  type: string
+  title: string
+  message: string
+  reference_id: string | null
+  is_read: boolean
+  created_at: Date
+}

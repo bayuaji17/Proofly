@@ -7,7 +7,15 @@ import {
   batchListResponseSchema,
   deleteBatchResponseSchema
 } from '../validators/batch.schema.js'
+import {
+  generateQrSchema,
+  listQrCodesQuerySchema,
+  generateQrResponseSchema,
+  qrCodeListResponseSchema
+} from '../validators/qrcode.schema.js'
 import * as batchService from '../services/batch.service.js'
+import * as qrcodeService from '../services/qrcode.service.js'
+import * as pdfService from '../services/pdf.service.js'
 import { authMiddleware } from '../middleware/auth.js'
 
 type AuthEnv = {
@@ -19,8 +27,10 @@ type AuthEnv = {
 
 const app = new Hono<AuthEnv>()
 
-// All batch routes require authentication
-app.use('*', authMiddleware)
+// Only apply auth to the batch routes, not everything under /api
+app.use('/products/*/batches/*', authMiddleware)
+app.use('/products/*/batches', authMiddleware)
+app.use('/batches/*', authMiddleware)
 
 // ── POST /products/:productId/batches — Create Batch ──
 app.post(
@@ -151,6 +161,88 @@ app.delete(
       success: true,
       message: 'Batch deleted successfully'
     }, 200)
+  }
+)
+
+// ── POST /batches/:batchId/generate — Generate QR Codes ──
+app.post(
+  '/batches/:batchId/generate',
+  describeRoute({
+    description: 'Generate QR codes for a batch. Locks the batch afterwards.',
+    security: [{ BearerAuth: [] }],
+    responses: {
+      201: {
+        description: 'QR codes generated successfully',
+        content: {
+          'application/json': { schema: resolver(generateQrResponseSchema) }
+        }
+      },
+      401: { description: 'Unauthorized' },
+      404: { description: 'Batch not found' },
+      409: { description: 'Batch already locked (QR codes already generated)' }
+    }
+  }),
+  async (c) => {
+    const batchId = c.req.param('batchId')
+    const result = await qrcodeService.generateForBatch(batchId)
+    return c.json({ data: result }, 201)
+  }
+)
+
+// ── GET /batches/:batchId/qrcodes — List QR Codes ──
+app.get(
+  '/batches/:batchId/qrcodes',
+  describeRoute({
+    description: 'List QR codes for a batch with pagination',
+    security: [{ BearerAuth: [] }],
+    responses: {
+      200: {
+        description: 'Paginated list of QR codes',
+        content: {
+          'application/json': { schema: resolver(qrCodeListResponseSchema) }
+        }
+      },
+      401: { description: 'Unauthorized' },
+      404: { description: 'Batch not found' }
+    }
+  }),
+  zValidator('query', listQrCodesQuerySchema),
+  async (c) => {
+    const batchId = c.req.param('batchId')
+    const query = c.req.valid('query')
+    const page = parseInt(query.page || '1', 10)
+    const page_size = parseInt(query.page_size || '20', 10)
+
+    const { rows, total } = await qrcodeService.listQrCodes(batchId, { page, page_size })
+    return c.json({ data: rows, total, page, page_size }, 200)
+  }
+)
+
+// ── GET /batches/:batchId/download — Download PDF ──
+app.get(
+  '/batches/:batchId/download',
+  describeRoute({
+    description: 'Download QR codes as a printable PDF (A4 grid layout)',
+    security: [{ BearerAuth: [] }],
+    responses: {
+      200: { description: 'PDF file containing QR codes' },
+      400: { description: 'QR codes not yet generated' },
+      401: { description: 'Unauthorized' },
+      404: { description: 'Batch not found' }
+    }
+  }),
+  async (c) => {
+    const batchId = c.req.param('batchId')
+    const pdfBuffer = await pdfService.generatePdf(batchId)
+
+    return new Response(new Uint8Array(pdfBuffer), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="qrcodes-${batchId}.pdf"`,
+        'Content-Length': pdfBuffer.length.toString()
+      }
+    })
   }
 )
 

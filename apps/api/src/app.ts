@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.js'
 import productRoutes from './routes/products.js'
 import batchRoutes from './routes/batches.js'
 import uploadRoutes from './routes/upload.js'
+import verifyRoutes from './routes/verify.js'
 
 const app = new Hono()
 
@@ -27,6 +28,7 @@ app.route('/api/auth', authRoutes)
 app.route('/api/products', productRoutes)
 app.route('/api', batchRoutes)
 app.route('/api/upload', uploadRoutes)
+app.route('/api/verify', verifyRoutes)
 
 // Basic healthcheck route
 app.get('/', (c) => {
