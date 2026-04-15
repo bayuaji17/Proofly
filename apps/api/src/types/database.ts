@@ -39,6 +39,8 @@ export interface Batch {
   production_date: string
   expiry_date: string
   is_locked: boolean
+  pdf_url: string | null
+  pdf_status: 'idle' | 'processing' | 'completed' | 'failed'
   created_at: Date
   updated_at: Date
 }
@@ -79,4 +81,16 @@ export interface NotificationRecord {
   reference_id: string | null
   is_read: boolean
   created_at: Date
+}
+
+export interface JobQueue {
+  id: string
+  type: string
+  payload: Record<string, unknown>
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  attempts: number
+  max_attempts: number
+  error: string | null
+  created_at: Date
+  updated_at: Date
 }

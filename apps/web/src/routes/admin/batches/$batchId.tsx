@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useSuspenseQuery, useQuery } from '@tanstack/react-query'
+import { useSuspenseQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Edit,
   Lock,
@@ -9,6 +9,8 @@ import {
   ScanLine,
   Download,
   Loader2,
+  RefreshCw,
+  AlertCircle,
 } from 'lucide-react'
 
 import { PageHeader } from '#/components/layout/page-header'
@@ -16,7 +18,7 @@ import { Breadcrumbs } from '#/components/ui/breadcrumbs'
 import { PageSkeleton } from '#/components/ui/skeleton'
 import { toast } from '#/components/ui/toast'
 import { batchQueryOptions } from '#/lib/queries/batches'
-import { qrCodesQueryOptions, downloadPdfBlob } from '#/lib/queries/qrcodes'
+import { qrCodesQueryOptions, retryPdfGeneration } from '#/lib/queries/qrcodes'
 import { GenerateQrDialog } from '#/components/forms/generate-qr-dialog'
 
 /* ------------------------------------------------------------------ */
@@ -35,7 +37,6 @@ export const Route = createFileRoute('/admin/batches/$batchId')({
   },
   loaderDeps: ({ search: { page } }) => ({ page }),
   loader: async ({ context, params }) => {
-    // Ensure we fetch batch data
     await context.queryClient.ensureQueryData(
       batchQueryOptions(params.batchId),
     )
@@ -58,16 +59,23 @@ function BatchDetailPage() {
   const search = Route.useSearch()
   const page = search.page ?? 1
   const navigate = useNavigate({ from: Route.fullPath })
-  
-  // Data Fetching
-  const { data: batchRes, refetch: refetchBatch } = useSuspenseQuery(batchQueryOptions(batchId))
+  const queryClient = useQueryClient()
+
+  // Data Fetching — auto-poll when PDF is processing
+  const { data: batchRes, refetch: refetchBatch } = useSuspenseQuery({
+    ...batchQueryOptions(batchId),
+    refetchInterval: (query) => {
+      const batch = query.state.data?.data
+      return batch?.pdf_status === 'processing' ? 3000 : false
+    },
+  })
   const batch = batchRes.data
 
   const { data: qrcodesRes, isLoading: qrLoading } = useQuery(qrCodesQueryOptions(batchId, page))
 
   // State
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false)
-  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
+  const [isRetrying, setIsRetrying] = useState(false)
 
   const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('id-ID', {
@@ -76,20 +84,22 @@ function BatchDetailPage() {
       year: 'numeric',
     })
 
-  const handleDownloadPdf = async () => {
+  const handleDownloadPdf = () => {
+    if (batch.pdf_url) {
+      window.open(batch.pdf_url, '_blank')
+    }
+  }
+
+  const handleRetryPdf = async () => {
     try {
-      setIsDownloadingPdf(true)
-      const blob = await downloadPdfBlob(batchId)
-      const url = URL.createObjectURL(blob)
-      toast.success('Berhasil memuat PDF')
-      // Open in new tab (Preview)
-      window.open(url, '_blank')
-      // Cleanup object URL after a while to avoid memory leaks
-      setTimeout(() => URL.revokeObjectURL(url), 1000 * 60 * 5)
+      setIsRetrying(true)
+      await retryPdfGeneration(batchId)
+      toast.success('PDF generation telah di-queue ulang')
+      refetchBatch()
     } catch (e: any) {
-      toast.error(e.message || 'Gagal mengunduh PDF')
+      toast.error(e.message || 'Gagal melakukan retry')
     } finally {
-      setIsDownloadingPdf(false)
+      setIsRetrying(false)
     }
   }
 
@@ -130,21 +140,59 @@ function BatchDetailPage() {
               Generate QR
             </button>
           </>
-        ) : (
+        ) : batch.pdf_status === 'processing' ? (
+          <button className="btn btn-sm gap-1" disabled>
+            <Loader2 className="size-4 animate-spin" />
+            Memproses PDF...
+          </button>
+        ) : batch.pdf_status === 'failed' ? (
           <button
-            onClick={handleDownloadPdf}
-            disabled={isDownloadingPdf}
-            className="btn btn-primary btn-sm gap-1"
+            onClick={handleRetryPdf}
+            disabled={isRetrying}
+            className="btn btn-error btn-sm gap-1"
           >
-            {isDownloadingPdf ? (
+            {isRetrying ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
-              <Download className="size-4" />
+              <RefreshCw className="size-4" />
             )}
-            {isDownloadingPdf ? 'Memuat...' : 'Download PDF'}
+            {isRetrying ? 'Retrying...' : 'Retry Generate PDF'}
           </button>
-        )}
+        ) : batch.pdf_status === 'completed' && batch.pdf_url ? (
+          <button
+            onClick={handleDownloadPdf}
+            className="btn btn-primary btn-sm gap-1"
+          >
+            <Download className="size-4" />
+            Download PDF
+          </button>
+        ) : null}
       </PageHeader>
+
+      {/* PDF Status Banner */}
+      {batch.is_locked && batch.pdf_status === 'processing' && (
+        <div className="flex items-center gap-3 rounded-xl border border-info/30 bg-info/5 px-5 py-3 mb-6">
+          <Loader2 className="size-5 animate-spin text-info" />
+          <div>
+            <p className="text-sm font-medium text-info">PDF sedang di-generate...</p>
+            <p className="text-xs text-base-content/60">
+              Proses ini membutuhkan waktu tergantung jumlah QR code. Halaman ini akan otomatis memperbarui status.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {batch.is_locked && batch.pdf_status === 'failed' && (
+        <div className="flex items-center gap-3 rounded-xl border border-error/30 bg-error/5 px-5 py-3 mb-6">
+          <AlertCircle className="size-5 text-error" />
+          <div>
+            <p className="text-sm font-medium text-error">PDF generation gagal</p>
+            <p className="text-xs text-base-content/60">
+              Terjadi kesalahan saat membuild PDF. Klik tombol "Retry Generate PDF" untuk mencoba kembali.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Batch Info */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -234,7 +282,7 @@ function BatchDetailPage() {
                       <p className="text-sm text-base-content/50">
                         Belum ada QR code yang di-generate.
                       </p>
-                      <button 
+                      <button
                         onClick={() => setIsGenerateDialogOpen(true)}
                         className="btn btn-outline btn-sm mt-2"
                       >
@@ -244,7 +292,6 @@ function BatchDetailPage() {
                   </td>
                 </tr>
               ) : qrLoading ? (
-                // Loading Skeletons
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b border-base-200/50 last:border-0 hover:bg-base-200/20 transition-colors">
                     <td className="px-5 py-4"><div className="h-4 w-32 bg-base-200 rounded animate-pulse" /></td>
@@ -259,8 +306,8 @@ function BatchDetailPage() {
                     <td className="px-5 py-4 font-mono text-sm">{qr.serial_number}</td>
                     <td className="px-5 py-4 text-center">
                       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        qr.status === 'genuine' ? 'bg-success/15 text-success' : 
-                        qr.status === 'counterfeit' ? 'bg-error/15 text-error' : 
+                        qr.status === 'genuine' ? 'bg-success/15 text-success' :
+                        qr.status === 'counterfeit' ? 'bg-error/15 text-error' :
                         'bg-base-200 text-base-content/70'
                       }`}>
                         {qr.status.charAt(0).toUpperCase() + qr.status.slice(1)}
@@ -281,7 +328,7 @@ function BatchDetailPage() {
               )}
             </tbody>
           </table>
-          
+
           {/* Pagination */}
           {qrcodesRes && qrcodesRes.total > qrcodesRes.page_size && (
              <div className="flex items-center justify-between border-t border-base-200 px-5 py-3">
@@ -289,17 +336,17 @@ function BatchDetailPage() {
                  Menampilkan <span className="font-medium text-base-content">{(page - 1) * qrcodesRes.page_size + 1}</span> hingga <span className="font-medium text-base-content">{Math.min(page * qrcodesRes.page_size, qrcodesRes.total)}</span> dari <span className="font-medium text-base-content">{qrcodesRes.total}</span> hasil
                </div>
                <div className="join">
-                 <button 
+                 <button
                    className="join-item btn btn-sm"
                    disabled={page === 1}
                    onClick={() => handlePageChange(page - 1)}
                  >
-                   « 
+                   «
                  </button>
                  <button className="join-item btn btn-sm">
                    Page {page}
                  </button>
-                 <button 
+                 <button
                    className="join-item btn btn-sm"
                    disabled={page * qrcodesRes.page_size >= qrcodesRes.total}
                    onClick={() => handlePageChange(page + 1)}
@@ -312,14 +359,14 @@ function BatchDetailPage() {
         </div>
       </div>
 
-      <GenerateQrDialog 
+      <GenerateQrDialog
         isOpen={isGenerateDialogOpen}
         onClose={() => setIsGenerateDialogOpen(false)}
         batchId={batchId}
         quantity={batch.quantity}
         onSuccess={() => {
-          // Refetch everything to show locked state & data list
           refetchBatch()
+          queryClient.invalidateQueries({ queryKey: ['batches', batchId, 'qrcodes'] })
           if (page !== 1) {
              handlePageChange(1)
           }

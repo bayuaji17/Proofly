@@ -15,7 +15,6 @@ import {
 } from '../validators/qrcode.schema.js'
 import * as batchService from '../services/batch.service.js'
 import * as qrcodeService from '../services/qrcode.service.js'
-import * as pdfService from '../services/pdf.service.js'
 import { authMiddleware } from '../middleware/auth.js'
 
 type AuthEnv = {
@@ -218,32 +217,78 @@ app.get(
   }
 )
 
-// ── GET /batches/:batchId/download — Download PDF ──
+// ── GET /batches/:batchId/download — Download PDF (redirect to R2) ──
 app.get(
   '/batches/:batchId/download',
   describeRoute({
-    description: 'Download QR codes as a printable PDF (A4 grid layout)',
+    description: 'Redirect to the PDF download URL on cloud storage',
     security: [{ BearerAuth: [] }],
     responses: {
-      200: { description: 'PDF file containing QR codes' },
+      302: { description: 'Redirect to PDF URL' },
       400: { description: 'QR codes not yet generated' },
+      401: { description: 'Unauthorized' },
+      404: { description: 'Batch not found' },
+      409: { description: 'PDF is still being generated or generation failed' }
+    }
+  }),
+  async (c) => {
+    const batchId = c.req.param('batchId')
+    const batch = await batchService.getBatch(batchId)
+
+    if (!batch.is_locked) {
+      return c.json({ message: 'QR codes have not been generated yet' }, 400)
+    }
+
+    if (batch.pdf_status === 'processing') {
+      return c.json({ message: 'PDF is still being generated. Please wait.' }, 409)
+    }
+
+    if (batch.pdf_status === 'failed') {
+      return c.json({ message: 'PDF generation failed. Please retry.' }, 409)
+    }
+
+    if (!batch.pdf_url) {
+      return c.json({ message: 'PDF not available yet' }, 409)
+    }
+
+    return c.redirect(batch.pdf_url, 302)
+  }
+)
+
+// ── POST /batches/:batchId/retry-pdf — Retry failed PDF generation ──
+app.post(
+  '/batches/:batchId/retry-pdf',
+  describeRoute({
+    description: 'Retry PDF generation for a batch that previously failed',
+    security: [{ BearerAuth: [] }],
+    responses: {
+      200: { description: 'PDF generation re-queued' },
+      400: { description: 'Batch is not in a retryable state' },
       401: { description: 'Unauthorized' },
       404: { description: 'Batch not found' }
     }
   }),
   async (c) => {
     const batchId = c.req.param('batchId')
-    const pdfBuffer = await pdfService.generatePdf(batchId)
+    const batch = await batchService.getBatch(batchId)
 
-    return new Response(new Uint8Array(pdfBuffer), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="qrcodes-${batchId}.pdf"`,
-        'Content-Length': pdfBuffer.length.toString()
-      }
-    })
+    if (batch.pdf_status !== 'failed') {
+      return c.json({
+        message: `Cannot retry: current status is '${batch.pdf_status}'. Only failed batches can be retried.`
+      }, 400)
+    }
+
+    // Re-enqueue the job
+    const { createJob } = await import('../db/queries/jobs.js')
+    await createJob('generate_pdf', { batch_id: batchId })
+
+    // Reset batch status to processing
+    const { updatePdfStatus } = await import('../db/queries/batches.js')
+    await updatePdfStatus(batchId, 'processing')
+
+    return c.json({ message: 'PDF generation re-queued', batch_id: batchId }, 200)
   }
 )
 
 export default app
+

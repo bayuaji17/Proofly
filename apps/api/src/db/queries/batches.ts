@@ -98,3 +98,22 @@ export async function isLocked(id: string): Promise<boolean> {
   if (!result.rows[0]) return false
   return result.rows[0].is_locked
 }
+
+export async function updatePdfStatus(
+  id: string,
+  status: 'idle' | 'processing' | 'completed' | 'failed',
+  pdfUrl?: string | null
+): Promise<void> {
+  if (pdfUrl !== undefined) {
+    await pool.query(
+      `UPDATE batches SET pdf_status = $2, pdf_url = $3, updated_at = NOW() WHERE id = $1`,
+      [id, status, pdfUrl]
+    )
+  } else {
+    await pool.query(
+      `UPDATE batches SET pdf_status = $2, updated_at = NOW() WHERE id = $1`,
+      [id, status]
+    )
+  }
+}
+

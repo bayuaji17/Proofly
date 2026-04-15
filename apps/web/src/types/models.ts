@@ -24,6 +24,8 @@ export interface Batch {
   production_date: string
   expiry_date: string
   is_locked: boolean
+  pdf_url: string | null
+  pdf_status: 'idle' | 'processing' | 'completed' | 'failed'
   created_at: string
   updated_at: string
   qr_code_count?: number

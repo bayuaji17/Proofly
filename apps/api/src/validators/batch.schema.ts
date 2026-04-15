@@ -5,7 +5,7 @@ import 'zod-openapi/extend'
 
 export const createBatchSchema = z.object({
   batch_number: z.string().min(1, 'Batch number is required').max(255),
-  quantity: z.number().int().min(1, 'Quantity must be at least 1').max(100000, 'Quantity must not exceed 100000'),
+  quantity: z.number().int().min(1, 'Quantity must be at least 1').max(10000, 'Quantity must not exceed 10000'),
   production_date: z.string().date('Invalid production date format (YYYY-MM-DD)'),
   expiry_date: z.string().date('Invalid expiry date format (YYYY-MM-DD)')
 }).refine(
@@ -18,7 +18,7 @@ export const createBatchSchema = z.object({
 
 export const updateBatchSchema = z.object({
   batch_number: z.string().min(1).max(255).optional(),
-  quantity: z.number().int().min(1).max(100000).optional(),
+  quantity: z.number().int().min(1).max(10000).optional(),
   production_date: z.string().date().optional(),
   expiry_date: z.string().date().optional()
 }).openapi({
@@ -36,6 +36,8 @@ const batchObject = z.object({
   production_date: z.string(),
   expiry_date: z.string(),
   is_locked: z.boolean(),
+  pdf_url: z.string().nullable().optional(),
+  pdf_status: z.enum(['idle', 'processing', 'completed', 'failed']).optional(),
   created_at: z.string(),
   updated_at: z.string(),
   qr_code_count: z.number().optional(),

@@ -1,6 +1,5 @@
 import { queryOptions } from '@tanstack/react-query'
 import { api } from '../api'
-import { authStore } from '../auth-store'
 
 export interface QrCode {
   id: string
@@ -39,7 +38,6 @@ export const qrCodesQueryOptions = (
   })
 
 // ── MUTATIONS ──
-// Data fetch for download functionality won't use react-query because it's a direct download/Blob fetch
 
 export async function generateQrCodes(
   batchId: string,
@@ -54,24 +52,8 @@ export async function generateQrCodes(
   }>(`/api/batches/${batchId}/generate`, { label_design: labelDesign })
 }
 
-export async function downloadPdfBlob(batchId: string): Promise<Blob> {
-  const url = api.buildUrl(`/api/batches/${batchId}/download`)
-  
-  const token = authStore.getToken()
-  const headers: HeadersInit = {}
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
-
-  // Use raw fetch because axios/api wrapper might not handle blob automatically
-  const response = await fetch(url, {
-    method: 'GET',
-    headers
-  })
-  
-  if (!response.ok) {
-    throw new Error('Gagal mengunduh PDF atau batch belum terkunci')
-  }
-  
-  return response.blob()
+export async function retryPdfGeneration(batchId: string) {
+  return api.post<{ message: string; batch_id: string }>(
+    `/api/batches/${batchId}/retry-pdf`
+  )
 }

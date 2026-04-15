@@ -2,6 +2,7 @@ import { HTTPException } from 'hono/http-exception'
 import { pool } from '../db/connection.js'
 import * as batchQueries from '../db/queries/batches.js'
 import * as qrcodeQueries from '../db/queries/qrcodes.js'
+import * as jobQueries from '../db/queries/jobs.js'
 import { generateBulkSerialNumbers } from '../utils/serial-generator.js'
 
 const MAX_COLLISION_RETRIES = 3
@@ -41,13 +42,22 @@ export async function generateForBatch(batchId: string) {
     serialNumbers = [...cleanSerials, ...replacements]
   }
 
-  // 4. Atomic transaction: bulk insert QR codes + lock batch
+  // 4. Atomic transaction: bulk insert QR codes + lock batch + set pdf_status + enqueue job
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
 
     await qrcodeQueries.bulkCreate(client, batchId, serialNumbers)
     await qrcodeQueries.lockBatch(client, batchId)
+
+    // Set pdf_status to 'processing'
+    await client.query(
+      `UPDATE batches SET pdf_status = 'processing', updated_at = NOW() WHERE id = $1`,
+      [batchId]
+    )
+
+    // Enqueue PDF generation job
+    await jobQueries.createJob('generate_pdf', { batch_id: batchId }, client)
 
     await client.query('COMMIT')
   } catch (err) {

@@ -33,6 +33,23 @@ vi.mock("../src/db/queries/qrcodes.js", () => ({
   findAllByBatchId: vi.fn(),
 }));
 
+vi.mock("../src/db/queries/jobs.js", () => ({
+  createJob: vi.fn().mockResolvedValue({
+    id: "job-1",
+    type: "generate_pdf",
+    payload: {},
+    status: "pending",
+    attempts: 0,
+    max_attempts: 3,
+    error: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }),
+  claimNextJob: vi.fn(),
+  completeJob: vi.fn(),
+  failJob: vi.fn(),
+}));
+
 // Mock pool.connect for transaction
 vi.mock("../src/db/connection.js", () => ({
   pool: {

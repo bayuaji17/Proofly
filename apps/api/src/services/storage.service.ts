@@ -57,6 +57,24 @@ export function getPublicUrl(key: string): string {
   return `${R2_PUBLIC_URL}/${key}`
 }
 
+// ── Upload Buffer (server-side) ──
+
+export async function uploadBuffer(
+  key: string,
+  buffer: Buffer,
+  contentType: string
+): Promise<void> {
+  const command = new PutObjectCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: key,
+    Body: buffer,
+    ContentType: contentType,
+    ContentLength: buffer.length,
+  })
+
+  await s3.send(command)
+}
+
 // ── Delete ──
 
 export async function deleteObject(key: string): Promise<void> {
